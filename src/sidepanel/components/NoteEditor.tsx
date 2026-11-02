@@ -13,7 +13,6 @@ interface NoteEditorProps {
   isEditing?: boolean
   onSave: (text: string, timestampSec: number) => Promise<void>
   onCancel: () => void
-  onOpenSettings?: () => void
 }
 
 export const NoteEditor: React.FC<NoteEditorProps> = ({
@@ -25,7 +24,6 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
   isEditing = false,
   onSave,
   onCancel,
-  onOpenSettings,
 }) => {
   const [timestamp, setTimestamp] = useState<number>(initialTimestampSec)
   const [text, setText] = useState<string>(initialText)
@@ -231,20 +229,10 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
         </button>
       </div>
 
-      {/* Alerta de error de IA con enlace a configuración si falta la Key */}
+      {/* Alerta de error de IA */}
       {aiError && (
         <div className="ai-error-banner">
           <span>{aiError}</span>
-          {onOpenSettings && (
-            <button
-              type="button"
-              className="chip-btn"
-              style={{ fontSize: '10px', padding: '2px 6px' }}
-              onClick={onOpenSettings}
-            >
-              Ajustes
-            </button>
-          )}
         </div>
       )}
 

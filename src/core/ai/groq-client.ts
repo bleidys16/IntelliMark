@@ -97,7 +97,7 @@ async function callProxyService(
     const message = err instanceof Error ? err.message : 'No se pudo conectar con el servidor de IA.'
     return {
       success: false,
-      error: `${message} (Puedes configurar tu clave propia de Groq en Ajustes).`,
+      error: message,
     }
   }
 }

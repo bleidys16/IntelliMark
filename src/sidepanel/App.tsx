@@ -14,7 +14,6 @@ import {
   Download,
   Sun,
   Moon,
-  Settings,
 } from 'lucide-react'
 import {
   fetchCurrentVideoState,
@@ -39,7 +38,6 @@ import { NoteEditor } from './components/NoteEditor'
 import { NoteCard } from './components/NoteCard'
 import { VideosList } from './components/VideosList'
 import { ExportModal } from './components/ExportModal'
-import { SettingsModal } from './components/SettingsModal'
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'current' | 'history'>('current')
@@ -61,7 +59,6 @@ export default function App() {
 
   // Estados de modales
   const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false)
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState<boolean>(false)
 
   const [loading, setLoading] = useState<boolean>(true)
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false)
@@ -325,15 +322,6 @@ export default function App() {
             {theme === 'light' ? <Moon size={14} /> : <Sun size={14} color="#f59e0b" />}
           </button>
 
-          {/* Botón de configuración (Groq API Key) */}
-          <button
-            onClick={() => setIsSettingsModalOpen(true)}
-            className="btn btn-secondary header-icon-btn"
-            title="Configurar IA (Groq)"
-          >
-            <Settings size={14} />
-          </button>
-
           {/* Botón de refrescar */}
           <button
             onClick={() => updateState()}
@@ -460,7 +448,6 @@ export default function App() {
                     }
                     setIsCreatingNote(false)
                   }}
-                  onOpenSettings={() => setIsSettingsModalOpen(true)}
                 />
               )}
 
@@ -480,7 +467,6 @@ export default function App() {
                     }
                     setEditingNote(null)
                   }}
-                  onOpenSettings={() => setIsSettingsModalOpen(true)}
                 />
               )}
 
@@ -542,11 +528,6 @@ export default function App() {
           notes={notes}
           onClose={() => setIsExportModalOpen(false)}
         />
-      )}
-
-      {/* Modal de Configuración (Groq API Key) */}
-      {isSettingsModalOpen && (
-        <SettingsModal onClose={() => setIsSettingsModalOpen(false)} />
       )}
     </div>
   )
