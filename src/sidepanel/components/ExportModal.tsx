@@ -82,19 +82,24 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   const loadSubjects = async () => {
     setIsLoadingSubjects(true)
     setUploadError(null)
-    const res = await getIntellixySubjects()
-    setIsLoadingSubjects(false)
-
-    if (res.success && res.subjects) {
-      setSubjects(res.subjects)
-      if (res.subjects.length > 0 && !selectedSubjectId) {
-        setSelectedSubjectId(res.subjects[0].id)
+    try {
+      const res = await getIntellixySubjects()
+      if (res.success && res.subjects) {
+        setSubjects(res.subjects)
+        if (res.subjects.length > 0 && !selectedSubjectId) {
+          setSelectedSubjectId(res.subjects[0].id)
+        }
+      } else if (res.error) {
+        const errorMsg = typeof res.error === 'string' ? res.error : 'Error al obtener materias.'
+        setUploadError(errorMsg)
+        if (errorMsg.toLowerCase().includes('expirado') || errorMsg.toLowerCase().includes('sesión')) {
+          setSession({ connected: false })
+        }
       }
-    } else if (res.error) {
-      setUploadError(res.error)
-      if (res.error.includes('expirado')) {
-        setSession({ connected: false })
-      }
+    } catch (err: unknown) {
+      setUploadError(err instanceof Error ? err.message : 'Error al cargar materias')
+    } finally {
+      setIsLoadingSubjects(false)
     }
   }
 
@@ -105,14 +110,19 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     setIsLoggingIn(true)
     setLoginError(null)
 
-    const res = await loginToIntellixy(loginEmail, loginPassword)
-    setIsLoggingIn(false)
-
-    if (res.success) {
-      setLoginPassword('')
-      await checkSession()
-    } else {
-      setLoginError(res.error || 'Credenciales incorrectas.')
+    try {
+      const res = await loginToIntellixy(loginEmail, loginPassword)
+      if (res.success) {
+        setLoginPassword('')
+        await checkSession()
+      } else {
+        const errorMsg = typeof res.error === 'string' ? res.error : 'Credenciales incorrectas.'
+        setLoginError(errorMsg)
+      }
+    } catch (err: unknown) {
+      setLoginError(err instanceof Error ? err.message : 'Error al conectar con Intellixy')
+    } finally {
+      setIsLoggingIn(false)
     }
   }
 
@@ -122,6 +132,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     setSubjects([])
     setSelectedSubjectId('')
     setUploadSuccess(false)
+    setUploadError(null)
   }
 
   const handleUploadToIntellixy = async () => {
@@ -130,19 +141,24 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     setUploadError(null)
     setUploadSuccess(false)
 
-    const res = await uploadNotesToIntellixy({
-      subjectId: selectedSubjectId,
-      videoTitle,
-      videoId,
-      notes,
-    })
+    try {
+      const res = await uploadNotesToIntellixy({
+        subjectId: selectedSubjectId,
+        videoTitle,
+        videoId,
+        notes,
+      })
 
-    setIsUploadingNotes(false)
-
-    if (res.success) {
-      setUploadSuccess(true)
-    } else {
-      setUploadError(res.error || 'Error al subir las notas a Intellixy.')
+      if (res.success) {
+        setUploadSuccess(true)
+      } else {
+        const errorMsg = typeof res.error === 'string' ? res.error : 'Error al subir las notas a Intellixy.'
+        setUploadError(errorMsg)
+      }
+    } catch (err: unknown) {
+      setUploadError(err instanceof Error ? err.message : 'Error inesperado al subir las notas.')
+    } finally {
+      setIsUploadingNotes(false)
     }
   }
 
@@ -315,7 +331,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
                   {loginError && (
                     <div className="ai-error-banner" style={{ margin: '4px 0' }}>
-                      <span>{loginError}</span>
+                      <span>{String(loginError)}</span>
                     </div>
                   )}
 
@@ -402,7 +418,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 
                   {uploadError && (
                     <div className="ai-error-banner" style={{ margin: '6px 0' }}>
-                      <span>{uploadError}</span>
+                      <span>{String(uploadError)}</span>
                     </div>
                   )}
 
@@ -413,18 +429,31 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                         <h5 style={{ fontSize: '12.5px', fontWeight: 800, margin: 0, color: '#059669' }}>
                           ¡Notas subidas con éxito!
                         </h5>
-                        <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '2px 0 6px 0' }}>
-                          Tus apuntes se guardaron como material de estudio en tu materia.
+                        <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '2px 0 8px 0' }}>
+                          Tus apuntes se guardaron correctamente en Intellixy como material de estudio.
                         </p>
-                        <a
-                          href={`${INTELLIXY_BASE_URL}/dashboard`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="btn btn-secondary"
-                          style={{ fontSize: '11px', padding: '4px 8px', gap: '4px' }}
-                        >
-                          Abrir Intellixy para estudiar <ExternalLink size={11} />
-                        </a>
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                          <a
+                            href={`${INTELLIXY_BASE_URL}/dashboard`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="btn btn-secondary"
+                            style={{ fontSize: '11px', padding: '4px 8px', gap: '4px' }}
+                          >
+                            Abrir Intellixy <ExternalLink size={11} />
+                          </a>
+                          <button
+                            type="button"
+                            className="chip-btn"
+                            style={{ fontSize: '11px', padding: '4px 8px' }}
+                            onClick={() => {
+                              setUploadSuccess(false)
+                              setUploadError(null)
+                            }}
+                          >
+                            Subir a otra materia
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ) : (

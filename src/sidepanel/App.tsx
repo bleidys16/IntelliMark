@@ -38,6 +38,7 @@ import { NoteEditor } from './components/NoteEditor'
 import { NoteCard } from './components/NoteCard'
 import { VideosList } from './components/VideosList'
 import { ExportModal } from './components/ExportModal'
+import { ErrorBoundary } from './components/ErrorBoundary'
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'current' | 'history'>('current')
@@ -529,14 +530,16 @@ export default function App() {
         </>
       )}
 
-      {/* Modal de Exportación (Word o Markdown) */}
+      {/* Modal de Exportación (Word, Markdown, Intellixy) */}
       {isExportModalOpen && videoState?.videoId && (
-        <ExportModal
-          videoId={videoState.videoId}
-          videoTitle={videoState.title}
-          notes={notes}
-          onClose={() => setIsExportModalOpen(false)}
-        />
+        <ErrorBoundary fallbackTitle="Error en ventana de exportación">
+          <ExportModal
+            videoId={videoState.videoId}
+            videoTitle={videoState.title}
+            notes={notes}
+            onClose={() => setIsExportModalOpen(false)}
+          />
+        </ErrorBoundary>
       )}
     </div>
   )

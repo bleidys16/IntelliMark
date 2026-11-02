@@ -25,6 +25,58 @@ export interface IntellixySession {
 }
 
 /**
+ * Convierte de manera segura cualquier error devuelto por la API (incluidos objetos de Zod o Next.js)
+ * en una cadena legible de texto plano, evitando que React intente renderizar objetos en el DOM.
+ */
+export function formatApiError(data: unknown, fallback: string): string {
+  if (!data) return fallback
+  if (typeof data === 'string') return data
+
+  const obj = (typeof data === 'object' && data !== null && 'error' in data)
+    ? (data as { error: unknown }).error
+    : data
+
+  if (typeof obj === 'string') return obj
+
+  if (obj && typeof obj === 'object') {
+    const errorRecord = obj as Record<string, unknown>
+
+    // 1. Manejar formato de Zod flatten(): { formErrors: [...], fieldErrors: { field: [...] } }
+    const fieldErrors = errorRecord.fieldErrors || errorRecord.errors
+    if (fieldErrors && typeof fieldErrors === 'object') {
+      const messages: string[] = []
+      for (const [field, msgs] of Object.entries(fieldErrors as Record<string, unknown>)) {
+        if (Array.isArray(msgs) && msgs.length > 0) {
+          messages.push(`${field}: ${msgs.join(', ')}`)
+        } else if (typeof msgs === 'string') {
+          messages.push(`${field}: ${msgs}`)
+        }
+      }
+      if (messages.length > 0) return messages.join(' | ')
+    }
+
+    if (Array.isArray(errorRecord.formErrors) && errorRecord.formErrors.length > 0) {
+      return (errorRecord.formErrors as string[]).join(', ')
+    }
+
+    // 2. Error estándar { message: '...' }
+    if (typeof errorRecord.message === 'string' && errorRecord.message.trim().length > 0) {
+      return errorRecord.message
+    }
+
+    // 3. Serializar como JSON si no es vacío
+    try {
+      const str = JSON.stringify(obj)
+      if (str !== '{}') return str
+    } catch {
+      // Ignorar fallo de stringify
+    }
+  }
+
+  return fallback
+}
+
+/**
  * Obtiene la sesión guardada de Intellixy en chrome.storage.local
  */
 export async function getIntellixySession(): Promise<IntellixySession> {
@@ -66,12 +118,18 @@ export async function loginToIntellixy(
       }),
     })
 
-    const data = await response.json().catch(() => ({}))
+    const raw = await response.text().catch(() => '')
+    let data: any = {}
+    try {
+      data = JSON.parse(raw)
+    } catch {
+      data = { rawText: raw }
+    }
 
     if (!response.ok) {
       return {
         success: false,
-        error: data.error || `Error de inicio de sesión (${response.status})`,
+        error: formatApiError(data, `Error de inicio de sesión (${response.status})`),
       }
     }
 
@@ -81,11 +139,6 @@ export async function loginToIntellixy(
       id: data.userId || data.id,
       email: email.trim(),
       name: data.name || email.trim().split('@')[0],
-    }
-
-    if (!token && !document?.cookie) {
-      // Si por alguna razón la API no devolvió token en el body
-      console.warn('Advertencia: No se encontró token explícito en el JSON de respuesta')
     }
 
     if (chrome.storage?.local) {
@@ -140,16 +193,22 @@ export async function getIntellixySubjects(): Promise<{
     })
 
     if (response.status === 401) {
-      // Sesión expirada
       await logoutIntellixy()
       return { success: false, error: 'Tu sesión en Intellixy ha expirado. Por favor inicia sesión nuevamente.' }
     }
 
-    const data = await response.json().catch(() => null)
+    const raw = await response.text().catch(() => '')
+    let data: any = null
+    try {
+      data = JSON.parse(raw)
+    } catch {
+      data = null
+    }
+
     if (!response.ok) {
       return {
         success: false,
-        error: data?.error || `Error al obtener materias (${response.status})`,
+        error: formatApiError(data, `Error al obtener materias (${response.status})`),
       }
     }
 
@@ -169,7 +228,10 @@ export async function getIntellixySubjects(): Promise<{
 }
 
 /**
- * Sube las notas capturadas a una materia seleccionada en Intellixy
+ * Sube las notas capturadas como material de texto a una materia de Intellixy.
+ * Compatible con el esquema pasteTextSchema del backend de Intellixy:
+ * - name: string (mínimo 1 carácter)
+ * - text: string (mínimo 50 caracteres)
  */
 export async function uploadNotesToIntellixy(params: {
   subjectId: string
@@ -181,48 +243,66 @@ export async function uploadNotesToIntellixy(params: {
   data?: any
   error?: string
 }> {
-  const { subjectId, videoTitle, videoId, notes } = params
-  const session = await getIntellixySession()
-
-  if (!session.connected || !session.token) {
-    return { success: false, error: 'Inicia sesión en Intellixy para enviar tus notas.' }
-  }
-
-  // Estructurar el texto en Markdown claro con timestamps clickeables y categorías
-  const lines: string[] = []
-  lines.push(`# ${videoTitle || 'Apuntes de YouTube'}`)
-  lines.push(`- **Video:** https://www.youtube.com/watch?v=${videoId}`)
-  lines.push(`- **Fecha:** ${new Date().toLocaleDateString('es-ES', { dateStyle: 'long' })}`)
-  lines.push(`- **Total de apuntes:** ${notes.length}\n`)
-  lines.push(`---\n`)
-  lines.push(`## Apuntes con Timestamps:\n`)
-
-  for (const n of notes) {
-    const catLabel = n.category ? ` [${n.category.toUpperCase()}]` : ''
-    lines.push(`- **${n.formattedTime}**${catLabel}: ${n.text}`)
-  }
-
-  const payloadText = lines.join('\n')
-
   try {
+    const { subjectId, videoTitle, videoId, notes = [] } = params
+    const session = await getIntellixySession()
+
+    if (!session.connected || !session.token) {
+      return { success: false, error: 'Inicia sesión en Intellixy para enviar tus notas.' }
+    }
+
+    const cleanTitle = (videoTitle?.trim() || 'Apuntes de YouTube').substring(0, 100)
+
+    // Estructurar el texto en Markdown con metadatos del video y timestamps
+    const lines: string[] = []
+    lines.push(`# ${cleanTitle}`)
+    if (videoId) {
+      lines.push(`- **Video:** https://www.youtube.com/watch?v=${videoId}`)
+    }
+    lines.push(`- **Fecha:** ${new Date().toLocaleDateString('es-ES', { dateStyle: 'long' })}`)
+    lines.push(`- **Total de apuntes:** ${notes.length}\n`)
+    lines.push(`---\n`)
+    lines.push(`## Apuntes con Timestamps:\n`)
+
+    for (const n of notes) {
+      const time = n.formattedTime || '00:00'
+      const catLabel = n.category ? ` [${n.category.toUpperCase()}]` : ''
+      lines.push(`- **${time}**${catLabel}: ${n.text}`)
+    }
+
+    let payloadText = lines.join('\n')
+
+    // El backend de Intellixy exige al menos 50 caracteres (z.string().min(50))
+    if (payloadText.length < 50) {
+      payloadText += '\n\n*Apuntes sincronizados desde la extensión IntelliMark para YouTube.*'
+    }
+
     const response = await fetch(`${INTELLIXY_BASE_URL}/api/subjects/${subjectId}/materials/text`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${session.token}`,
       },
+      // Se envían tanto 'name' (esperado por el backend de Intellixy) como 'title' para máxima compatibilidad
       body: JSON.stringify({
-        title: videoTitle ? `${videoTitle.substring(0, 80)} (YouTube)` : 'Apuntes de YouTube',
+        name: cleanTitle,
+        title: cleanTitle,
         text: payloadText,
       }),
     })
 
-    const data = await response.json().catch(() => ({}))
+    const raw = await response.text().catch(() => '')
+    let data: any = {}
+    try {
+      data = JSON.parse(raw)
+    } catch {
+      data = { rawText: raw }
+    }
 
     if (!response.ok) {
       return {
         success: false,
-        error: data.error || `Error al guardar material en Intellixy (${response.status})`,
+        error: formatApiError(data, `Error al guardar material en Intellixy (${response.status})`),
       }
     }
 
