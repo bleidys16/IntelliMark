@@ -1,0 +1,17 @@
+{
+  "name": "intellimark-ai-proxy",
+  "version": "1.0.0",
+  "description": "Microservicio proxy para IntelliMark AI con Hono en Cloudflare Workers",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "hono": "^4.7.1"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250224.0",
+    "wrangler": "^3.111.0"
+  }
+}

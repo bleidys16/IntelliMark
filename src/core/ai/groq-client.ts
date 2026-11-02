@@ -1,6 +1,10 @@
-// Servicio de Asistencia con IA ultrarrápida usando Groq API (Llama 3.3 70B Versatile o 8B Instant)
+// Servicio de Asistencia con IA: Conecta al Microservicio Proxy o directo a Groq como fallback
 
 const GROQ_API_KEY_STORAGE = 'intellimark_groq_api_key'
+const CUSTOM_PROXY_URL_STORAGE = 'intellimark_proxy_url'
+
+// URL por defecto del microservicio de IntelliMark
+export const DEFAULT_PROXY_URL = 'https://intellimark-ai-proxy.bleidys16.workers.dev'
 
 export interface EnhanceNoteResult {
   success: boolean
@@ -10,39 +14,103 @@ export interface EnhanceNoteResult {
 
 export type AIAssistAction = 'clarify' | 'bullets' | 'expand' | 'grammar'
 
-/**
- * Obtiene la API Key de Groq guardada en chrome.storage.local
- */
 export async function getGroqApiKey(): Promise<string> {
   if (!chrome.storage?.local) return ''
   const res = await chrome.storage.local.get([GROQ_API_KEY_STORAGE])
   return res[GROQ_API_KEY_STORAGE] || ''
 }
 
-/**
- * Guarda o actualiza la API Key de Groq en chrome.storage.local
- */
 export async function setGroqApiKey(apiKey: string): Promise<void> {
   if (!chrome.storage?.local) return
   await chrome.storage.local.set({ [GROQ_API_KEY_STORAGE]: apiKey.trim() })
 }
 
+export async function getProxyUrl(): Promise<string> {
+  if (!chrome.storage?.local) return DEFAULT_PROXY_URL
+  const res = await chrome.storage.local.get([CUSTOM_PROXY_URL_STORAGE])
+  return res[CUSTOM_PROXY_URL_STORAGE] || DEFAULT_PROXY_URL
+}
+
+export async function setProxyUrl(url: string): Promise<void> {
+  if (!chrome.storage?.local) return
+  await chrome.storage.local.set({ [CUSTOM_PROXY_URL_STORAGE]: url.trim() })
+}
+
 /**
- * Envía el borrador de la nota a Groq para mejorarla, estructurarla o resumirla.
+ * Mejora la nota.
+ * Prioridad 1: Si el usuario configuró su propia clave personal de Groq (BYOK), la usa directo.
+ * Prioridad 2: Si no tiene clave, usa automáticamente el Backend Proxy seguro de IntelliMark.
  */
 export async function enhanceNoteWithGroq(
   text: string,
   action: AIAssistAction,
   videoTitle?: string
 ): Promise<EnhanceNoteResult> {
-  const apiKey = await getGroqApiKey()
-  if (!apiKey) {
-    return {
-      success: false,
-      error: 'Por favor configura tu API Key gratuita de Groq en Ajustes.',
-    }
+  const personalApiKey = await getGroqApiKey()
+
+  // 1. Si el usuario proporcionó su propia clave, hacemos llamada directa (BYOK)
+  if (personalApiKey) {
+    return callGroqDirect(text, action, personalApiKey, videoTitle)
   }
 
+  // 2. Si no tiene clave, llamamos al microservicio proxy oficial (Cero configuración para el usuario)
+  return callProxyService(text, action, videoTitle)
+}
+
+/**
+ * Llamada al Microservicio Proxy
+ */
+async function callProxyService(
+  text: string,
+  action: AIAssistAction,
+  videoTitle?: string
+): Promise<EnhanceNoteResult> {
+  const proxyUrl = await getProxyUrl()
+  const endpoint = proxyUrl.replace(/\/+$/, '') + '/api/ai/enhance'
+
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        text,
+        action,
+        videoTitle,
+      }),
+    })
+
+    const data = await response.json()
+    if (!response.ok || !data.success) {
+      return {
+        success: false,
+        error: data.error || `Error del proxy (${response.status})`,
+      }
+    }
+
+    return {
+      success: true,
+      enhancedText: data.enhancedText,
+    }
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'No se pudo conectar con el servidor de IA.'
+    return {
+      success: false,
+      error: `${message} (Puedes configurar tu clave propia de Groq en Ajustes).`,
+    }
+  }
+}
+
+/**
+ * Fallback: Llamada directa a Groq con API Key del usuario
+ */
+async function callGroqDirect(
+  text: string,
+  action: AIAssistAction,
+  apiKey: string,
+  videoTitle?: string
+): Promise<EnhanceNoteResult> {
   let promptInstruction = ''
   switch (action) {
     case 'clarify':
