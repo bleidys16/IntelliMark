@@ -13,6 +13,8 @@ export default defineManifest({
     'https://www.youtube.com/*',
     'https://api.groq.com/*',
     'https://*.workers.dev/*',
+    'https://*.vercel.app/*',
+    'https://intellixy-web.vercel.app/*',
   ],
   background: {
     service_worker: 'src/background/service-worker.ts',

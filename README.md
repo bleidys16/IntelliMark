@@ -38,6 +38,7 @@
 - **Exportación Dual Profesional:**
   - **Microsoft Word (.docx):** Documentos elegantes con portada, metadatos y tabla de notas con enlaces clickeables a YouTube.
   - **Markdown (.md):** Formato limpio listo para importar a Obsidian, Notion o tu editor preferido.
+- **⚡ Integración Opcional con Intellixy:** Conecta tu cuenta mediante login directo para enviar tus apuntes de YouTube a cualquier materia y generar Flashcards de repaso y Quizzes automáticos con IA en [intellixy-web.vercel.app](https://intellixy-web.vercel.app).
 - **Diseño Editorial:**
   - Tipografía geométrica **Manrope** empaquetada localmente.
   - **Modo Claro** con fondo cálido editorial (`#FEF8F0`).
