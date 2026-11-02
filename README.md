@@ -15,18 +15,26 @@
   <a href="#-stack-tecnológico">Stack</a>
 </p>
 
+<p align="center">
+  <img src="docs/preview.png" alt="IntelliMark Preview" width="100%" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.15);" />
+</p>
+
 ---
 
 ## ✨ Características Principales
 
 - **Captura con Timestamp Exacto:** Al presionar `Alt + Shift + N` o el botón *"Nueva nota"*, se congela el segundo del video para que tomes notas sin perder el hilo.
 - **Pausa Automática Inteligente:** El reproductor de YouTube se pausa al iniciar una nota para no perder detalles, permitiéndote reanudarlo cuando desees.
-- **Salto en el Tiempo (Seek):** Haz clic en el botón de tiempo de cualquier nota (ej. `▶ 03:45`) y el video saltará instantáneamente al momento exacto.
-- **Asistente de IA (Groq / Llama 3.3):**
-  - **Mejorar:** Clarifica ideas y redacta apuntes concisos.
-  - **Viñetas:** Estructura notas dispersas en listas de puntos clave.
-  - **Ortografía:** Corrección gramatical y sintáctica automática.
-  - **Arquitectura Segura:** Soporte para microservicio proxy y modelo híbrido sin exponer credenciales.
+- **Salto en el Tiempo con Auto-Play:** Haz clic en el botón de tiempo de cualquier nota (ej. `▶ 03:45`) y el video saltará instantáneamente al momento exacto e iniciará la reproducción.
+- **Chips de Clasificación Rápida:** Organiza tus apuntes con etiquetas de un solo toque: `💡 Idea`, `📌 Clave`, `❓ Duda` y `⚠️ Examen` con bordes visuales temáticos.
+- **Copia al Portapapeles en 1 Clic:** Copia apuntes individuales al instante para pegarlos en Notion, WhatsApp o tu documento de estudio.
+- **Asistente de IA Automático (Groq):**
+  - **✨ Mejorar:** Clarifica ideas y redacta apuntes concisos con animación de resplandor (*shimmer*).
+  - **📋 Viñetas:** Estructura notas dispersas en listas de puntos clave.
+  - **✅ Ortografía:** Corrección gramatical y sintáctica automática.
+  - **Arquitectura Transparente:** Conectado mediante microservicio seguro sin necesidad de configurar claves API.
+- **Persistencia de Borrador:** Si cambias de pestaña o cierras el panel, el apunte que estés escribiendo se guarda automáticamente y se restaura sin perder ni una letra.
+- **Historial con Búsqueda:** Consulta tus videos anteriores en la pestaña *"Mis videos"* y filtra rápidamente por título.
 - **Exportación Dual Profesional:**
   - **Microsoft Word (.docx):** Documentos elegantes con portada, metadatos y tabla de notas con enlaces clickeables a YouTube.
   - **Markdown (.md):** Formato limpio listo para importar a Obsidian, Notion o tu editor preferido.

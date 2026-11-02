@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>IntelliMark Showcase</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #09090b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    /* Browser Window Mockup Frame */
+    .browser-frame {
+      width: 1240px;
+      height: 740px;
+      background: #18181b;
+      border-radius: 14px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08);
+    }
+
+    /* Window Header / Tabs */
+    .browser-top {
+      height: 42px;
+      background: #121214;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .traffic-dots {
+      display: flex;
+      gap: 7px;
+    }
+    .dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+    }
+    .dot.red { background: #ff5f56; }
+    .dot.yellow { background: #ffbd2e; }
+    .dot.green { background: #27c93f; }
+
+    .browser-tab {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #27272a;
+      padding: 6px 14px;
+      border-radius: 8px 8px 0 0;
+      color: #e4e4e7;
+      font-size: 12px;
+      font-weight: 600;
+      width: 280px;
+    }
+    .yt-icon {
+      color: #ff0000;
+      font-size: 14px;
+      font-weight: 900;
+    }
+    .tab-title {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* App Split Container */
+    .content-area {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* Left: YouTube Simulation */
+    .youtube-pane {
+      flex: 1;
+      background: #0f0f0f;
+      display: flex;
+      flex-direction: column;
+      padding: 20px 28px;
+      gap: 16px;
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+      position: relative;
+    }
+    .yt-video-player {
+      width: 100%;
+      height: 420px;
+      background: radial-gradient(circle at 60% 40%, #1e1b4b 0%, #09090b 70%);
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 24px;
+      box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.6);
+    }
+    .neural-net-visual {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 500px;
+      height: 260px;
+      opacity: 0.85;
+    }
+    .yt-player-controls {
+      margin-top: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
+      margin: -24px;
+      padding: 16px 24px;
+    }
+    .progress-bar-bg {
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 2px;
+      position: relative;
+    }
+    .progress-bar-fill {
+      width: 32%;
+      height: 100%;
+      background: #ef4444;
+      border-radius: 2px;
+      position: relative;
+    }
+    .progress-scrubber {
+      position: absolute;
+      right: -6px;
+      top: -4px;
+      width: 12px;
+      height: 12px;
+      background: #ef4444;
+      border-radius: 50%;
+      box-shadow: 0 0 6px rgba(239, 68, 68, 0.8);
+    }
+    .control-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #fff;
+      font-size: 13px;
+    }
+    .left-controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .play-btn {
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .time-stamp-yt {
+      font-size: 12px;
+      font-weight: 500;
+      color: #d4d4d8;
+    }
+
+    .yt-info {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .yt-title {
+      font-size: 19px;
+      font-weight: 700;
+      color: #f4f4f5;
+      letter-spacing: -0.3px;
+    }
+    .yt-channel-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .channel-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 800;
+      font-size: 14px;
+    }
+    .channel-meta {
+      display: flex;
+      flex-direction: column;
+    }
+    .channel-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: #f4f4f5;
+    }
+    .channel-subs {
+      font-size: 12px;
+      color: #a1a1aa;
+    }
+
+    /* Right: IntelliMark Side Panel */
+    .intellimark-pane {
+      width: 400px;
+      background: #FEF8F0;
+      display: flex;
+      flex-direction: column;
+      border-left: 1px solid rgba(0, 0, 0, 0.08);
+      color: #1f2937;
+    }
+    .sidepanel-header {
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(229, 219, 203, 0.7);
+    }
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .brand-group img {
+      width: 28px;
+      height: 28px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+    }
+    .brand-name {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: -0.4px;
+      color: #18181b;
+    }
+    .header-btns {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #ffffff;
+      border: 1px solid #e5dbcb;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #4f46e5;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+    .btn-icon {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      border: 1px solid #e5dbcb;
+      border-radius: 6px;
+      color: #71717a;
+      font-size: 13px;
+    }
+
+    /* Tab switcher */
+    .tabs-bar {
+      display: flex;
+      border-bottom: 1px solid #e5dbcb;
+      padding: 0 16px;
+      gap: 16px;
+      background: rgba(254, 248, 240, 0.6);
+    }
+    .tab-btn {
+      padding: 9px 0;
+      font-size: 12px;
+      font-weight: 700;
+      color: #71717a;
+      cursor: pointer;
+      position: relative;
+    }
+    .tab-btn.active {
+      color: #4f46e5;
+    }
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: #4f46e5;
+      border-radius: 2px;
+    }
+
+    /* Scrollable Side Content */
+    .sidepanel-body {
+      padding: 14px 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Video Card */
+    .video-card {
+      background: #ffffff;
+      border: 1px solid #e5dbcb;
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+    .video-card-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #18181b;
+      line-height: 1.35;
+    }
+    .video-card-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .time-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      font-weight: 800;
+      color: #4f46e5;
+    }
+    .time-actions {
+      display: flex;
+      gap: 5px;
+    }
+    .chip-btn {
+      padding: 3px 7px;
+      background: #f4f0e8;
+      border: 1px solid #e5dbcb;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #52525b;
+    }
+
+    /* Note Editor */
+    .note-editor-card {
+      background: #ffffff;
+      border: 1.5px solid #4f46e5;
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.12);
+    }
+    .editor-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .time-pill {
+      background: rgba(79, 70, 229, 0.1);
+      color: #4f46e5;
+      padding: 2px 7px;
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .auto-save-tag {
+      font-size: 10px;
+      color: #10b981;
+      font-weight: 700;
+    }
+
+    /* Category Chips Selector */
+    .category-chips {
+      display: flex;
+      gap: 5px;
+    }
+    .cat-chip {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 12px;
+      border: 1px solid #e5dbcb;
+      background: #faf7f2;
+      color: #71717a;
+    }
+    .cat-chip.active-idea {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: #10b981;
+      color: #059669;
+    }
+
+    .note-textarea {
+      width: 100%;
+      border: 1px solid #e5dbcb;
+      border-radius: 7px;
+      padding: 8px 10px;
+      font-family: inherit;
+      font-size: 12px;
+      color: #18181b;
+      line-height: 1.45;
+      resize: none;
+      background: #fff;
+      outline: none;
+    }
+
+    /* AI Assistant Bar */
+    .ai-bar {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: #fdf6ec;
+      border: 1px solid #fed7aa;
+      border-radius: 7px;
+      padding: 5px 8px;
+    }
+    .ai-label {
+      font-size: 11px;
+      font-weight: 800;
+      color: #d97706;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      margin-right: 2px;
+    }
+    .ai-btn {
+      padding: 3px 7px;
+      font-size: 10.5px;
+      font-weight: 700;
+      border-radius: 5px;
+      border: 1px solid #e5dbcb;
+      background: #ffffff;
+      color: #4b5563;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    /* Note Card in list */
+    .note-card {
+      background: #ffffff;
+      border: 1px solid #e5dbcb;
+      border-radius: 9px;
+      padding: 11px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    }
+    .note-card.cat-key {
+      border-left: 3.5px solid #3b82f6;
+    }
+    .note-card.cat-exam {
+      border-left: 3.5px solid #ef4444;
+    }
+    .note-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .note-tag-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .note-time-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 800;
+      color: #4f46e5;
+      background: rgba(79, 70, 229, 0.08);
+      border: 1px solid rgba(79, 70, 229, 0.2);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .badge-pill {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 10px;
+    }
+    .badge-key {
+      background: rgba(59, 130, 246, 0.12);
+      color: #2563eb;
+      border: 1px solid rgba(59, 130, 246, 0.25);
+    }
+    .badge-exam {
+      background: rgba(239, 68, 68, 0.12);
+      color: #dc2626;
+      border: 1px solid rgba(239, 68, 68, 0.25);
+    }
+    .note-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #71717a;
+      font-size: 12px;
+    }
+    .note-body {
+      font-size: 11.8px;
+      color: #374151;
+      line-height: 1.45;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="browser-frame">
+    <!-- Browser Top Bar -->
+    <div class="browser-top">
+      <div class="traffic-dots">
+        <div class="dot red"></div>
+        <div class="dot yellow"></div>
+        <div class="dot green"></div>
+      </div>
+      <div class="browser-tab">
+        <span class="yt-icon">▶</span>
+        <span class="tab-title">Mastering Machine Learning - YouTube</span>
+      </div>
+    </div>
+
+    <!-- Content Split Area -->
+    <div class="content-area">
+      <!-- Left: YouTube Player -->
+      <div class="youtube-pane">
+        <div class="yt-video-player">
+          <svg class="neural-net-visual" viewBox="0 0 500 260">
+            <!-- Neural network SVG illustration -->
+            <defs>
+              <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#818cf8" stop-opacity="0.6"/>
+                <stop offset="100%" stop-color="#ec4899" stop-opacity="0.6"/>
+              </linearGradient>
+            </defs>
+            <!-- Connections -->
+            <line x1="80" y1="60" x2="220" y2="40" stroke="url(#lineGrad)" stroke-width="2"/>
+            <line x1="80" y1="60" x2="220" y2="110" stroke="url(#lineGrad)" stroke-width="2"/>
+            <line x1="80" y1="130" x2="220" y2="40" stroke="url(#lineGrad)" stroke-width="2"/>
+            <line x1="80" y1="130" x2="220" y2="180" stroke="url(#lineGrad)" stroke-width="2"/>
+            <line x1="80" y1="200" x2="220" y2="180" stroke="url(#lineGrad)" stroke-width="2"/>
+            <line x1="220" y1="40" x2="360" y2="80" stroke="url(#lineGrad)" stroke-width="2.5"/>
+            <line x1="220" y1="110" x2="360" y2="140" stroke="url(#lineGrad)" stroke-width="2.5"/>
+            <line x1="220" y1="180" x2="360" y2="140" stroke="url(#lineGrad)" stroke-width="2.5"/>
+            <line x1="360" y1="80" x2="440" y2="110" stroke="#f43f5e" stroke-width="3"/>
+            <line x1="360" y1="140" x2="440" y2="110" stroke="#f43f5e" stroke-width="3"/>
+
+            <!-- Nodes Layer 1 -->
+            <circle cx="80" cy="60" r="14" fill="#4f46e5" stroke="#a5b4fc" stroke-width="3"/>
+            <circle cx="80" cy="130" r="14" fill="#4f46e5" stroke="#a5b4fc" stroke-width="3"/>
+            <circle cx="80" cy="200" r="14" fill="#4f46e5" stroke="#a5b4fc" stroke-width="3"/>
+
+            <!-- Nodes Layer 2 -->
+            <circle cx="220" cy="40" r="15" fill="#9333ea" stroke="#d8b4fe" stroke-width="3"/>
+            <circle cx="220" cy="110" r="15" fill="#9333ea" stroke="#d8b4fe" stroke-width="3"/>
+            <circle cx="220" cy="180" r="15" fill="#9333ea" stroke="#d8b4fe" stroke-width="3"/>
+
+            <!-- Nodes Layer 3 -->
+            <circle cx="360" cy="80" r="15" fill="#ec4899" stroke="#fbcfe8" stroke-width="3"/>
+            <circle cx="360" cy="140" r="15" fill="#ec4899" stroke="#fbcfe8" stroke-width="3"/>
+
+            <!-- Output Node -->
+            <circle cx="440" cy="110" r="18" fill="#f43f5e" stroke="#ffffff" stroke-width="4"/>
+          </svg>
+
+          <!-- Overlay controls -->
+          <div class="yt-player-controls">
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill">
+                <div class="progress-scrubber"></div>
+              </div>
+            </div>
+            <div class="control-row">
+              <div class="left-controls">
+                <span class="play-btn">❚❚</span>
+                <span class="time-stamp-yt">04:25 / 45:10</span>
+              </div>
+              <div style="font-size: 13px; color: #a1a1aa;">HD • 1080p</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="yt-info">
+          <h2 class="yt-title">Mastering Machine Learning & Neural Networks - Full Course 2026</h2>
+          <div class="yt-channel-row">
+            <div class="channel-avatar">AI</div>
+            <div class="channel-meta">
+              <span class="channel-name">Deep Learning Academy</span>
+              <span class="channel-subs">420 K suscriptores</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: IntelliMark Side Panel Extension -->
+      <div class="intellimark-pane">
+        <!-- Header -->
+        <div class="sidepanel-header">
+          <div class="brand-group">
+            <img src="../public/logo_transparent.png" alt="IntelliMark">
+            <span class="brand-name">IntelliMark</span>
+          </div>
+          <div class="header-btns">
+            <div class="btn-badge">⬇ Exportar</div>
+            <div class="btn-icon">🌙</div>
+            <div class="btn-icon">🔄</div>
+          </div>
+        </div>
+
+        <!-- Tab bar -->
+        <div class="tabs-bar">
+          <div class="tab-btn active">Video actual (3)</div>
+          <div class="tab-btn">Mis videos (8)</div>
+        </div>
+
+        <!-- Body -->
+        <div class="sidepanel-body">
+          <!-- Active video info -->
+          <div class="video-card">
+            <span class="video-card-title">Mastering Machine Learning & Neural Networks</span>
+            <div class="video-card-controls">
+              <span class="time-badge">⏱ 04:25 / 45:10</span>
+              <div class="time-actions">
+                <span class="chip-btn">↺ -5s</span>
+                <span class="chip-btn">❚❚</span>
+                <span class="chip-btn">↻ +5s</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Note Editor Form in Action -->
+          <div class="note-editor-card">
+            <div class="editor-top">
+              <span class="time-pill">⏱ 04:25</span>
+              <span class="auto-save-tag">● Auto-guardado</span>
+            </div>
+
+            <!-- Category Chips -->
+            <div class="category-chips">
+              <div class="cat-chip active-idea">💡 Idea</div>
+              <div class="cat-chip">📌 Clave</div>
+              <div class="cat-chip">❓ Duda</div>
+              <div class="cat-chip">⚠️ Examen</div>
+            </div>
+
+            <textarea class="note-textarea" rows="2">Las funciones de activación como ReLU solucionan el problema del desvanecimiento del gradiente en capas profundas.</textarea>
+
+            <!-- AI Assist Bar -->
+            <div class="ai-bar">
+              <span class="ai-label">✨ IA:</span>
+              <span class="ai-btn">✨ Mejorar</span>
+              <span class="ai-btn">📋 Viñetas</span>
+              <span class="ai-btn">✅ Ortografía</span>
+            </div>
+          </div>
+
+          <!-- Saved Notes List -->
+          <div class="note-card cat-key">
+            <div class="note-header">
+              <div class="note-tag-group">
+                <span class="note-time-btn">▶ 01:15</span>
+                <span class="badge-pill badge-key">📌 Clave</span>
+              </div>
+              <div class="note-actions">
+                <span>📋</span>
+                <span>✏️</span>
+                <span>🗑️</span>
+              </div>
+            </div>
+            <p class="note-body">El aprendizaje supervisado necesita datos con etiquetas (pares X, Y) para ajustar los pesos del modelo mediante descenso de gradiente.</p>
+          </div>
+
+          <div class="note-card cat-exam">
+            <div class="note-header">
+              <div class="note-tag-group">
+                <span class="note-time-btn">▶ 03:55</span>
+                <span class="badge-pill badge-exam">⚠️ Examen</span>
+              </div>
+              <div class="note-actions">
+                <span>📋</span>
+                <span>✏️</span>
+                <span>🗑️</span>
+              </div>
+            </div>
+            <p class="note-body">Overfitting: ocurre cuando el modelo memoriza el ruido de entrenamiento en lugar de generalizar. Se previene con Dropout y Regularización L2.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
