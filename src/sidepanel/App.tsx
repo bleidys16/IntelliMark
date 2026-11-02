@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import {
   Play,
   Pause,
@@ -30,6 +30,8 @@ import {
   deleteNote,
   getAllVideos,
   deleteVideoAndNotes,
+  getNoteDraft,
+  clearNoteDraft,
 } from '../core/storage/notes-repository'
 import { Note, VideoMetadata, VideoState } from '../shared/types'
 import { formatTimestamp } from '../shared/time'
@@ -51,6 +53,11 @@ export default function App() {
   const [isCreatingNote, setIsCreatingNote] = useState<boolean>(false)
   const [capturedTime, setCapturedTime] = useState<number>(0)
   const [editingNote, setEditingNote] = useState<Note | null>(null)
+  const videoStateRef = useRef<VideoState | null>(null)
+
+  useEffect(() => {
+    videoStateRef.current = videoState
+  }, [videoState])
 
   // Estados de modales
   const [isExportModalOpen, setIsExportModalOpen] = useState<boolean>(false)
@@ -94,15 +101,41 @@ export default function App() {
     setVideos(list)
   }
 
-  const updateState = async () => {
+  const updateState = async (forceReset = false) => {
     setIsRefreshing(true)
     const state = await fetchCurrentVideoState()
-    setVideoState(state)
 
     if (state?.videoId) {
+      setVideoState(state)
       await loadNotes(state.videoId)
+
+      // Comprobar si existe un borrador pendiente para este video
+      const draft = await getNoteDraft(state.videoId)
+      if (draft && draft.text && draft.text.trim().length > 0) {
+        if (draft.editingNoteId) {
+          const currentNotes = await getNotesForVideo(state.videoId)
+          const target = currentNotes.find((n) => n.id === draft.editingNoteId)
+          if (target) {
+            setEditingNote({ ...target, text: draft.text, timestampSec: draft.timestampSec })
+            setIsCreatingNote(false)
+          } else {
+            setCapturedTime(draft.timestampSec)
+            setIsCreatingNote(true)
+            setEditingNote(null)
+          }
+        } else {
+          setCapturedTime(draft.timestampSec)
+          setIsCreatingNote(true)
+          setEditingNote(null)
+        }
+      }
     } else {
-      setNotes([])
+      // Si la nueva pestaña activa no es YouTube pero ya teníamos un video cargado,
+      // mantenemos el estado y el borrador en pantalla a menos que se fuerce el reseteo
+      if (forceReset || !videoStateRef.current?.videoId) {
+        setVideoState(null)
+        setNotes([])
+      }
     }
 
     await loadVideos()
@@ -157,16 +190,26 @@ export default function App() {
     }
 
     // Escuchar cambios de pestañas en Chrome
-    const handleTabActivated = () => updateState()
+    const handleTabActivated = () => updateState(false)
     const handleTabUpdated = (_id: number, change: chrome.tabs.TabChangeInfo) => {
       if (change.status === 'complete' || change.url) {
-        updateState()
+        updateState(false)
+      }
+    }
+    const handleTabRemoved = () => {
+      if (chrome.tabs?.query) {
+        chrome.tabs.query({ url: '*://*.youtube.com/watch*' }, (tabs) => {
+          if (!tabs || tabs.length === 0) {
+            updateState(true)
+          }
+        })
       }
     }
 
     if (chrome.tabs) {
       chrome.tabs.onActivated.addListener(handleTabActivated)
       chrome.tabs.onUpdated.addListener(handleTabUpdated)
+      chrome.tabs.onRemoved.addListener(handleTabRemoved)
     }
 
     if (chrome.runtime?.onMessage) {
@@ -178,6 +221,7 @@ export default function App() {
       if (chrome.tabs) {
         chrome.tabs.onActivated.removeListener(handleTabActivated)
         chrome.tabs.onUpdated.removeListener(handleTabUpdated)
+        chrome.tabs.onRemoved.removeListener(handleTabRemoved)
       }
       if (chrome.runtime?.onMessage) {
         chrome.runtime.onMessage.removeListener(handleRuntimeMessage)
@@ -196,6 +240,7 @@ export default function App() {
       videoTitle: videoState.title,
     })
 
+    await clearNoteDraft(videoState.videoId)
     await loadNotes(videoState.videoId)
     await loadVideos()
     setIsCreatingNote(false)
@@ -210,6 +255,7 @@ export default function App() {
       timestampSec,
     })
 
+    await clearNoteDraft(videoState.videoId)
     await loadNotes(videoState.videoId)
     setEditingNote(null)
   }
@@ -290,7 +336,7 @@ export default function App() {
 
           {/* Botón de refrescar */}
           <button
-            onClick={updateState}
+            onClick={() => updateState()}
             className="btn btn-secondary header-icon-btn"
             title="Actualizar estado"
           >
@@ -405,9 +451,15 @@ export default function App() {
               {isCreatingNote && (
                 <NoteEditor
                   initialTimestampSec={capturedTime}
+                  videoId={videoState.videoId}
                   videoTitle={videoState.title}
                   onSave={handleSaveNewNote}
-                  onCancel={() => setIsCreatingNote(false)}
+                  onCancel={async () => {
+                    if (videoState?.videoId) {
+                      await clearNoteDraft(videoState.videoId)
+                    }
+                    setIsCreatingNote(false)
+                  }}
                   onOpenSettings={() => setIsSettingsModalOpen(true)}
                 />
               )}
@@ -417,10 +469,17 @@ export default function App() {
                 <NoteEditor
                   initialTimestampSec={editingNote.timestampSec}
                   initialText={editingNote.text}
+                  videoId={videoState.videoId}
+                  draftNoteId={editingNote.id}
                   videoTitle={videoState.title}
                   isEditing={true}
                   onSave={handleUpdateNote}
-                  onCancel={() => setEditingNote(null)}
+                  onCancel={async () => {
+                    if (videoState?.videoId) {
+                      await clearNoteDraft(videoState.videoId)
+                    }
+                    setEditingNote(null)
+                  }}
                   onOpenSettings={() => setIsSettingsModalOpen(true)}
                 />
               )}

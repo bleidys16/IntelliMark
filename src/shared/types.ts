@@ -26,3 +26,11 @@ export interface VideoState {
   isPaused: boolean             // ¿Está pausado?
   isAd: boolean                 // ¿Se está reproduciendo un anuncio?
 }
+
+export interface NoteDraft {
+  text: string                  // Contenido del borrador
+  timestampSec: number          // Segundo capturado del video
+  editingNoteId?: string | null // ID si se estaba editando una nota existente
+  updatedAt: number             // Timestamp de última escritura
+}
+

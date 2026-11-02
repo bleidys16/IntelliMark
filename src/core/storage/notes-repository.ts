@@ -1,8 +1,9 @@
-import { Note, VideoMetadata } from '../../shared/types'
+import { Note, VideoMetadata, NoteDraft } from '../../shared/types'
 import { formatTimestamp } from '../../shared/time'
 
 const VIDEOS_INDEX_KEY = 'videos:index'
 const getNotesKey = (videoId: string) => `notes:${videoId}`
+const getDraftKey = (videoId: string) => `draft:${videoId}`
 
 /**
  * Obtiene todas las notas asociadas a un video específico, ordenadas cronológicamente por timestamp.
@@ -155,3 +156,30 @@ async function updateVideoIndex(meta: { videoId: string; title: string; lastAcce
 
   await chrome.storage.local.set({ [VIDEOS_INDEX_KEY]: currentVideos })
 }
+
+/**
+ * Guarda un borrador de nota para un video en caso de cambio de pestaña o cierre involuntario.
+ */
+export async function saveNoteDraft(videoId: string, draft: NoteDraft): Promise<void> {
+  if (!videoId || !chrome.storage?.local) return
+  await chrome.storage.local.set({ [getDraftKey(videoId)]: draft })
+}
+
+/**
+ * Recupera el borrador de nota para un video, si existe.
+ */
+export async function getNoteDraft(videoId: string): Promise<NoteDraft | null> {
+  if (!videoId || !chrome.storage?.local) return null
+  const key = getDraftKey(videoId)
+  const result = await chrome.storage.local.get([key])
+  return (result[key] as NoteDraft) || null
+}
+
+/**
+ * Elimina el borrador de nota para un video tras guardar o cancelar.
+ */
+export async function clearNoteDraft(videoId: string): Promise<void> {
+  if (!videoId || !chrome.storage?.local) return
+  await chrome.storage.local.remove([getDraftKey(videoId)])
+}
+

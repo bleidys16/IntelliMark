@@ -2,11 +2,14 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Clock, Check, X, RotateCcw, RotateCw, Sparkles, List, FileCheck, Loader2 } from 'lucide-react'
 import { formatTimestamp } from '../../shared/time'
 import { enhanceNoteWithGroq, AIAssistAction } from '../../core/ai/groq-client'
+import { saveNoteDraft, clearNoteDraft, getNoteDraft } from '../../core/storage/notes-repository'
 
 interface NoteEditorProps {
   initialTimestampSec: number
   initialText?: string
   videoTitle?: string
+  videoId?: string
+  draftNoteId?: string
   isEditing?: boolean
   onSave: (text: string, timestampSec: number) => Promise<void>
   onCancel: () => void
@@ -17,6 +20,8 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
   initialTimestampSec,
   initialText = '',
   videoTitle = '',
+  videoId = '',
+  draftNoteId,
   isEditing = false,
   onSave,
   onCancel,
@@ -33,8 +38,61 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
     textareaRef.current?.focus()
   }, [])
 
+  // Si cambia el timestamp o el texto inicial externamente, sincronizar
+  useEffect(() => {
+    setTimestamp(initialTimestampSec)
+  }, [initialTimestampSec])
+
+  useEffect(() => {
+    if (initialText) {
+      setText(initialText)
+    }
+  }, [initialText])
+
+  // Recuperar borrador si el componente se monta sin initialText
+  useEffect(() => {
+    if (videoId && !initialText) {
+      getNoteDraft(videoId).then((draft) => {
+        if (draft && draft.text) {
+          setText(draft.text)
+          if (draft.timestampSec !== undefined) {
+            setTimestamp(draft.timestampSec)
+          }
+        }
+      })
+    }
+  }, [videoId, initialText])
+
+  const handleTextChange = (newText: string) => {
+    setText(newText)
+    if (aiError) setAiError(null)
+
+    if (videoId) {
+      if (newText.trim().length > 0) {
+        saveNoteDraft(videoId, {
+          text: newText,
+          timestampSec: timestamp,
+          editingNoteId: isEditing ? (draftNoteId || null) : null,
+          updatedAt: Date.now(),
+        })
+      } else {
+        clearNoteDraft(videoId)
+      }
+    }
+  }
+
   const handleAdjustTime = (delta: number) => {
-    setTimestamp((prev) => Math.max(0, prev + delta))
+    const nextTime = Math.max(0, timestamp + delta)
+    setTimestamp(nextTime)
+
+    if (videoId && text.trim().length > 0) {
+      saveNoteDraft(videoId, {
+        text,
+        timestampSec: nextTime,
+        editingNoteId: isEditing ? (draftNoteId || null) : null,
+        updatedAt: Date.now(),
+      })
+    }
   }
 
   const handleAIEnhance = async (action: AIAssistAction) => {
@@ -47,6 +105,14 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
 
     if (result.success && result.enhancedText) {
       setText(result.enhancedText)
+      if (videoId) {
+        saveNoteDraft(videoId, {
+          text: result.enhancedText,
+          timestampSec: timestamp,
+          editingNoteId: isEditing ? (draftNoteId || null) : null,
+          updatedAt: Date.now(),
+        })
+      }
     } else if (result.error) {
       setAiError(result.error)
     }
@@ -58,10 +124,20 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
 
     setIsSubmitting(true)
     try {
+      if (videoId) {
+        await clearNoteDraft(videoId)
+      }
       await onSave(text.trim(), timestamp)
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  const handleCancel = async () => {
+    if (videoId) {
+      await clearNoteDraft(videoId)
+    }
+    onCancel()
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -71,7 +147,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
     }
     if (e.key === 'Escape') {
       e.preventDefault()
-      onCancel()
+      handleCancel()
     }
   }
 
@@ -100,7 +176,14 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
             </button>
           </div>
         </div>
-        <span className="editor-mode-label">{isEditing ? 'Editando nota' : 'Nueva nota'}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {text.trim().length > 0 && (
+            <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+              Auto-guardado
+            </span>
+          )}
+          <span className="editor-mode-label">{isEditing ? 'Editando nota' : 'Nueva nota'}</span>
+        </div>
       </div>
 
       <textarea
@@ -108,10 +191,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
         className="note-textarea"
         placeholder="Escribe tu apunte aquí... (Enter para guardar, Shift+Enter para nueva línea)"
         value={text}
-        onChange={(e) => {
-          setText(e.target.value)
-          if (aiError) setAiError(null)
-        }}
+        onChange={(e) => handleTextChange(e.target.value)}
         onKeyDown={handleKeyDown}
         rows={3}
       />
@@ -176,7 +256,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
           <button
             type="button"
             className="btn btn-secondary"
-            onClick={onCancel}
+            onClick={handleCancel}
             disabled={isSubmitting || isAILoading}
           >
             <X size={14} /> Cancelar
