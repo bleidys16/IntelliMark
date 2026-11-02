@@ -1,6 +1,19 @@
-# <img src="public/logo.png" width="28" height="28" valign="middle" /> IntelliMark
+<p align="center">
+  <img src="public/logo_transparent.png" alt="IntelliMark Logo" width="180" />
+</p>
 
-**IntelliMark** es una extensión de Chrome (Manifest V3) diseñada para transformar cualquier video de YouTube en apuntes de estudio estructurados y eficientes mediante timestamps precisos, exportación profesional y asistencia con Inteligencia Artificial.
+<h1 align="center">IntelliMark</h1>
+
+<p align="center">
+  <strong>Convierte videos de YouTube en apuntes de estudio estructurados con timestamps, asistencia de IA y exportación profesional.</strong>
+</p>
+
+<p align="center">
+  <a href="#-características-principales">Características</a> •
+  <a href="#️-instalación-en-modo-desarrollador">Instalación</a> •
+  <a href="#-atajos-de-teclado-globales">Atajos</a> •
+  <a href="#-stack-tecnológico">Stack</a>
+</p>
 
 ---
 
@@ -13,6 +26,7 @@
   - **Mejorar:** Clarifica ideas y redacta apuntes concisos.
   - **Viñetas:** Estructura notas dispersas en listas de puntos clave.
   - **Ortografía:** Corrección gramatical y sintáctica automática.
+  - **Arquitectura Segura:** Soporte para microservicio proxy y modelo híbrido sin exponer credenciales.
 - **Exportación Dual Profesional:**
   - **Microsoft Word (.docx):** Documentos elegantes con portada, metadatos y tabla de notas con enlaces clickeables a YouTube.
   - **Markdown (.md):** Formato limpio listo para importar a Obsidian, Notion o tu editor preferido.
@@ -66,4 +80,4 @@
 - **Iconografía:** Lucide React
 - **Tipografía:** `@fontsource/manrope`
 - **Exportadores:** `docx` & `Blob API`
-- **IA Engine:** Groq SDK / REST API (Llama 3.3 70B)
+- **IA Engine:** Groq SDK / Llama 3.3 70B & Microservicio Hono en Cloudflare Workers
