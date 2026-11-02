@@ -32,7 +32,7 @@ import {
   getNoteDraft,
   clearNoteDraft,
 } from '../core/storage/notes-repository'
-import { Note, VideoMetadata, VideoState } from '../shared/types'
+import { Note, VideoMetadata, VideoState, NoteCategory } from '../shared/types'
 import { formatTimestamp } from '../shared/time'
 import { NoteEditor } from './components/NoteEditor'
 import { NoteCard } from './components/NoteCard'
@@ -113,7 +113,12 @@ export default function App() {
           const currentNotes = await getNotesForVideo(state.videoId)
           const target = currentNotes.find((n) => n.id === draft.editingNoteId)
           if (target) {
-            setEditingNote({ ...target, text: draft.text, timestampSec: draft.timestampSec })
+            setEditingNote({
+              ...target,
+              text: draft.text,
+              timestampSec: draft.timestampSec,
+              category: draft.category || target.category,
+            })
             setIsCreatingNote(false)
           } else {
             setCapturedTime(draft.timestampSec)
@@ -227,7 +232,7 @@ export default function App() {
   }, [])
 
   // Guardar nueva nota en chrome.storage.local
-  const handleSaveNewNote = async (text: string, timestampSec: number) => {
+  const handleSaveNewNote = async (text: string, timestampSec: number, category?: NoteCategory) => {
     if (!videoState?.videoId) return
 
     await saveNote({
@@ -235,6 +240,7 @@ export default function App() {
       timestampSec,
       text,
       videoTitle: videoState.title,
+      category,
     })
 
     await clearNoteDraft(videoState.videoId)
@@ -244,12 +250,13 @@ export default function App() {
   }
 
   // Actualizar una nota existente
-  const handleUpdateNote = async (text: string, timestampSec: number) => {
+  const handleUpdateNote = async (text: string, timestampSec: number, category?: NoteCategory) => {
     if (!videoState?.videoId || !editingNote) return
 
     await updateNote(videoState.videoId, editingNote.id, {
       text,
       timestampSec,
+      category,
     })
 
     await clearNoteDraft(videoState.videoId)
@@ -275,9 +282,10 @@ export default function App() {
     }
   }
 
-  // Saltar en el video de YouTube
+  // Saltar en el video de YouTube y reproducir automáticamente
   const handleSeek = async (seconds: number) => {
-    await seekPlayerTo(seconds)
+    await seekPlayerTo(seconds, true)
+    setVideoState((prev) => (prev ? { ...prev, isPaused: false, currentTime: seconds } : prev))
   }
 
   // Filtrar notas con el buscador
@@ -456,6 +464,7 @@ export default function App() {
                 <NoteEditor
                   initialTimestampSec={editingNote.timestampSec}
                   initialText={editingNote.text}
+                  initialCategory={editingNote.category}
                   videoId={videoState.videoId}
                   draftNoteId={editingNote.id}
                   videoTitle={videoState.title}

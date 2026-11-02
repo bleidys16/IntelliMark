@@ -3,21 +3,31 @@ import { Clock, Check, X, RotateCcw, RotateCw, Sparkles, List, FileCheck, Loader
 import { formatTimestamp } from '../../shared/time'
 import { enhanceNoteWithGroq, AIAssistAction } from '../../core/ai/groq-client'
 import { saveNoteDraft, clearNoteDraft, getNoteDraft } from '../../core/storage/notes-repository'
+import { NoteCategory } from '../../shared/types'
 
 interface NoteEditorProps {
   initialTimestampSec: number
   initialText?: string
+  initialCategory?: NoteCategory
   videoTitle?: string
   videoId?: string
   draftNoteId?: string
   isEditing?: boolean
-  onSave: (text: string, timestampSec: number) => Promise<void>
+  onSave: (text: string, timestampSec: number, category?: NoteCategory) => Promise<void>
   onCancel: () => void
 }
+
+const CATEGORY_OPTIONS: { id: NoteCategory; label: string }[] = [
+  { id: 'idea', label: '💡 Idea' },
+  { id: 'key', label: '📌 Clave' },
+  { id: 'question', label: '❓ Duda' },
+  { id: 'exam', label: '⚠️ Examen' },
+]
 
 export const NoteEditor: React.FC<NoteEditorProps> = ({
   initialTimestampSec,
   initialText = '',
+  initialCategory,
   videoTitle = '',
   videoId = '',
   draftNoteId,
@@ -27,6 +37,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
 }) => {
   const [timestamp, setTimestamp] = useState<number>(initialTimestampSec)
   const [text, setText] = useState<string>(initialText)
+  const [category, setCategory] = useState<NoteCategory | undefined>(initialCategory)
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
   const [isAILoading, setIsAILoading] = useState<boolean>(false)
   const [aiError, setAiError] = useState<string | null>(null)
@@ -36,7 +47,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
     textareaRef.current?.focus()
   }, [])
 
-  // Si cambia el timestamp o el texto inicial externamente, sincronizar
+  // Sincronizar si cambian los valores iniciales
   useEffect(() => {
     setTimestamp(initialTimestampSec)
   }, [initialTimestampSec])
@@ -47,6 +58,12 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
     }
   }, [initialText])
 
+  useEffect(() => {
+    if (initialCategory) {
+      setCategory(initialCategory)
+    }
+  }, [initialCategory])
+
   // Recuperar borrador si el componente se monta sin initialText
   useEffect(() => {
     if (videoId && !initialText) {
@@ -56,41 +73,45 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
           if (draft.timestampSec !== undefined) {
             setTimestamp(draft.timestampSec)
           }
+          if (draft.category) {
+            setCategory(draft.category)
+          }
         }
       })
     }
   }, [videoId, initialText])
 
+  const persistDraft = (newText: string, newTime: number, newCategory?: NoteCategory) => {
+    if (!videoId) return
+    if (newText.trim().length > 0) {
+      saveNoteDraft(videoId, {
+        text: newText,
+        timestampSec: newTime,
+        category: newCategory,
+        editingNoteId: isEditing ? (draftNoteId || null) : null,
+        updatedAt: Date.now(),
+      })
+    } else {
+      clearNoteDraft(videoId)
+    }
+  }
+
   const handleTextChange = (newText: string) => {
     setText(newText)
     if (aiError) setAiError(null)
-
-    if (videoId) {
-      if (newText.trim().length > 0) {
-        saveNoteDraft(videoId, {
-          text: newText,
-          timestampSec: timestamp,
-          editingNoteId: isEditing ? (draftNoteId || null) : null,
-          updatedAt: Date.now(),
-        })
-      } else {
-        clearNoteDraft(videoId)
-      }
-    }
+    persistDraft(newText, timestamp, category)
   }
 
   const handleAdjustTime = (delta: number) => {
     const nextTime = Math.max(0, timestamp + delta)
     setTimestamp(nextTime)
+    persistDraft(text, nextTime, category)
+  }
 
-    if (videoId && text.trim().length > 0) {
-      saveNoteDraft(videoId, {
-        text,
-        timestampSec: nextTime,
-        editingNoteId: isEditing ? (draftNoteId || null) : null,
-        updatedAt: Date.now(),
-      })
-    }
+  const handleToggleCategory = (catId: NoteCategory) => {
+    const nextCat = category === catId ? undefined : catId
+    setCategory(nextCat)
+    persistDraft(text, timestamp, nextCat)
   }
 
   const handleAIEnhance = async (action: AIAssistAction) => {
@@ -103,14 +124,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
 
     if (result.success && result.enhancedText) {
       setText(result.enhancedText)
-      if (videoId) {
-        saveNoteDraft(videoId, {
-          text: result.enhancedText,
-          timestampSec: timestamp,
-          editingNoteId: isEditing ? (draftNoteId || null) : null,
-          updatedAt: Date.now(),
-        })
-      }
+      persistDraft(result.enhancedText, timestamp, category)
     } else if (result.error) {
       setAiError(result.error)
     }
@@ -125,7 +139,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
       if (videoId) {
         await clearNoteDraft(videoId)
       }
-      await onSave(text.trim(), timestamp)
+      await onSave(text.trim(), timestamp, category)
     } finally {
       setIsSubmitting(false)
     }
@@ -150,7 +164,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
   }
 
   return (
-    <div className="note-editor-card">
+    <div className={`note-editor-card ${isAILoading ? 'ai-loading-active' : ''}`}>
       <div className="note-editor-header">
         <div className="note-editor-time">
           <Clock size={15} color="var(--accent)" />
@@ -184,9 +198,27 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
         </div>
       </div>
 
+      {/* Selector de Chips de Clasificación Rápida */}
+      <div className="category-selector">
+        {CATEGORY_OPTIONS.map((cat) => {
+          const isSelected = category === cat.id
+          return (
+            <button
+              key={cat.id}
+              type="button"
+              className={`category-chip ${isSelected ? `selected-${cat.id}` : ''}`}
+              onClick={() => handleToggleCategory(cat.id)}
+              title={`Marcar apunte como ${cat.label}`}
+            >
+              {cat.label}
+            </button>
+          )
+        })}
+      </div>
+
       <textarea
         ref={textareaRef}
-        className="note-textarea"
+        className={`note-textarea ${isAILoading ? 'ai-loading-active' : ''}`}
         placeholder="Escribe tu apunte aquí... (Enter para guardar, Shift+Enter para nueva línea)"
         value={text}
         onChange={(e) => handleTextChange(e.target.value)}
@@ -197,14 +229,14 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
       {/* Barra de Asistencia con IA (Groq) */}
       <div className="ai-assistant-bar">
         <span className="ai-label">
-          <Sparkles size={12} color="var(--primary)" /> IA Groq:
+          <Sparkles size={12} color="var(--primary)" /> IA:
         </span>
         <button
           type="button"
           className="ai-chip-btn"
           onClick={() => handleAIEnhance('clarify')}
           disabled={!text.trim() || isAILoading}
-          title="Clarificar y resumir nota con IA"
+          title="Clarificar y redactar apunte con IA"
         >
           {isAILoading ? <Loader2 size={11} className="spin" /> : <Sparkles size={11} />}
           Mejorar
@@ -214,7 +246,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
           className="ai-chip-btn"
           onClick={() => handleAIEnhance('bullets')}
           disabled={!text.trim() || isAILoading}
-          title="Convertir a viñetas"
+          title="Convertir a viñetas estructuradas"
         >
           <List size={11} /> Viñetas
         </button>
@@ -223,7 +255,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({
           className="ai-chip-btn"
           onClick={() => handleAIEnhance('grammar')}
           disabled={!text.trim() || isAILoading}
-          title="Corregir ortografía"
+          title="Corregir ortografía automáticamente"
         >
           <FileCheck size={11} /> Ortografía
         </button>

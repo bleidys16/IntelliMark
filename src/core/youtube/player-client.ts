@@ -47,13 +47,13 @@ export async function fetchCurrentVideoState(): Promise<VideoState | null> {
 /**
  * Mueve el reproductor de YouTube al segundo indicado.
  */
-export async function seekPlayerTo(seconds: number): Promise<boolean> {
+export async function seekPlayerTo(seconds: number, autoPlay: boolean = true): Promise<boolean> {
   const tab = await getActiveYouTubeTab()
   if (!tab?.id) return false
 
   const res = await sendMessageToTab<ActionResponse>(tab.id, {
     type: 'SEEK_TO',
-    payload: { seconds },
+    payload: { seconds, autoPlay },
   })
   return !!res?.success
 }

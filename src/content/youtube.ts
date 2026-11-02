@@ -81,6 +81,9 @@ chrome.runtime.onMessage.addListener(
         }
         const target = Math.max(0, message.payload.seconds)
         video.currentTime = target
+        if (message.payload.autoPlay !== false) {
+          video.play().catch(() => {})
+        }
         sendResponse({ success: true })
         break
       }

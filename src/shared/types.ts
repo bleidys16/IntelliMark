@@ -1,11 +1,14 @@
 // Tipos de datos fundamentales de IntelliMark (Core)
 
+export type NoteCategory = 'idea' | 'key' | 'question' | 'exam'
+
 export interface Note {
   id: string                    // Identificador único (UUID o timestamp)
   videoId: string               // ID del video de YouTube (ej. dQw4w9WgXcQ)
   timestampSec: number          // Segundo exacto del video (ej. 125 para 02:05)
   formattedTime: string         // Representación legible (ej. "02:05" o "1:02:05")
   text: string                  // Contenido de la nota escrita por el usuario
+  category?: NoteCategory       // Categoría opcional (💡 Idea, 📌 Clave, ❓ Duda, ⚠️ Examen)
   createdAt: number             // Fecha de creación (milisegundos Unix)
   updatedAt: number             // Fecha de última modificación
 }
@@ -30,6 +33,7 @@ export interface VideoState {
 export interface NoteDraft {
   text: string                  // Contenido del borrador
   timestampSec: number          // Segundo capturado del video
+  category?: NoteCategory       // Categoría del borrador
   editingNoteId?: string | null // ID si se estaba editando una nota existente
   updatedAt: number             // Timestamp de última escritura
 }

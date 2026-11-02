@@ -1,4 +1,4 @@
-import { Note, VideoMetadata, NoteDraft } from '../../shared/types'
+import { Note, VideoMetadata, NoteDraft, NoteCategory } from '../../shared/types'
 import { formatTimestamp } from '../../shared/time'
 
 const VIDEOS_INDEX_KEY = 'videos:index'
@@ -27,8 +27,9 @@ export async function saveNote(params: {
   timestampSec: number
   text: string
   videoTitle?: string
+  category?: NoteCategory
 }): Promise<Note> {
-  const { videoId, timestampSec, text, videoTitle } = params
+  const { videoId, timestampSec, text, videoTitle, category } = params
   const now = Date.now()
   const key = getNotesKey(videoId)
 
@@ -38,6 +39,7 @@ export async function saveNote(params: {
     timestampSec: Math.max(0, Math.floor(timestampSec)),
     formattedTime: formatTimestamp(timestampSec),
     text: text.trim(),
+    category,
     createdAt: now,
     updatedAt: now,
   }
@@ -64,7 +66,7 @@ export async function saveNote(params: {
 export async function updateNote(
   videoId: string,
   noteId: string,
-  updates: { text?: string; timestampSec?: number }
+  updates: { text?: string; timestampSec?: number; category?: NoteCategory }
 ): Promise<Note | null> {
   const currentNotes = await getNotesForVideo(videoId)
   const index = currentNotes.findIndex((n) => n.id === noteId)
@@ -78,6 +80,7 @@ export async function updateNote(
     text: updates.text !== undefined ? updates.text.trim() : existing.text,
     timestampSec: updatedTimestamp,
     formattedTime: formatTimestamp(updatedTimestamp),
+    category: updates.category !== undefined ? updates.category : existing.category,
     updatedAt: Date.now(),
   }
 
