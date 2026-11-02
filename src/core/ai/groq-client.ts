@@ -3,8 +3,8 @@
 const GROQ_API_KEY_STORAGE = 'intellimark_groq_api_key'
 const CUSTOM_PROXY_URL_STORAGE = 'intellimark_proxy_url'
 
-// URL por defecto del microservicio de IntelliMark
-export const DEFAULT_PROXY_URL = 'https://intellimark-ai-proxy.bleidys16.workers.dev'
+// URL oficial del microservicio en producción desplegado en Cloudflare Workers
+export const DEFAULT_PROXY_URL = 'https://intellimark-ai-proxy.analyzor.workers.dev'
 
 export interface EnhanceNoteResult {
   success: boolean

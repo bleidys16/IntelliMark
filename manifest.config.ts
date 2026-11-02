@@ -12,6 +12,7 @@ export default defineManifest({
   host_permissions: [
     'https://www.youtube.com/*',
     'https://api.groq.com/*',
+    'https://*.workers.dev/*',
   ],
   background: {
     service_worker: 'src/background/service-worker.ts',
