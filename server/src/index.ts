@@ -94,7 +94,7 @@ REGLA CRÍTICA: Responde ÚNICAMENTE con el texto de la nota mejorada. NO agregu
         Authorization: `Bearer ${groqApiKey}`,
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model: 'qwen/qwen3.8-27b',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: text },
